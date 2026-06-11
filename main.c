@@ -60,8 +60,8 @@ NO * buscar_funcionario(int codigo){
 int main() {
     //pra ler do teclado
     int cod;
-    char nome[100];
-    char cargo[100];
+    char *nome;
+    char *cargo;
     double sal;
 
     // Tenta carregar o arquivo logo ao abrir o programa
