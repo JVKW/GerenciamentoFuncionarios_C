@@ -79,11 +79,24 @@ void remover(){
     }
 
 void listar_funcionarios(){
-//logica para percorrer a lista e imprimir
-
-
+    //logica para percorrer a lista e imprimir
+    NO *aux = inicio;
+    if(aux == NULL){
+        printf("=> Ainda nao ha funcionarios cadastrados. Por favor, cadastre-os!");
+    }else{
+        printf("=== LISTA DE FUNCIONARIOS ===\n\n");
+        while (aux != NULL){
+            printf("    Nome: %s\n", aux->nome);
+            printf("    Codigo: %d\n", aux->codigo);
+            printf("    Cargo: %s\n", aux->cargo);
+            printf("    Salario: R$ %.2lf\n", aux->salario);
+            printf("_______________________________\n\n");
+            aux = aux->prox;
+        }
+    }
+    
 }
-NO * buscar_funcionario(int codigo){
+NO * buscar(int codigo){
 //logica para buscar funcionarios recebendo o codigo do funcionario como parametro
     NO * aux = inicio;
     while(aux->codigo != codigo){
@@ -100,30 +113,31 @@ int main() {
     // Tenta carregar o arquivo logo ao abrir o programa
     carregar_dados();
     int opcao;
+    system("cls");
 
     do {
-        system("cls");
         printf("\n============================\n");
         printf("    MENU DE FUNCIONARIOS    \n");
         printf("============================\n\n");
-        printf("1 - Cadastrar funcionario\n");
-        printf("2 - Listar funcionarios\n");
-        printf("3 - Buscar funcionario\n");
-        printf("4 - Alterar funcionario\n");
-        printf("5 - Remover funcionario\n");
-        printf("0 - Sair e Salvar\n");
+        printf("=> 1 - Cadastrar funcionario\n");
+        printf("=> 2 - Listar funcionarios\n");
+        printf("=> 3 - Buscar funcionario\n");
+        printf("=> 4 - Alterar funcionario\n");
+        printf("=> 5 - Remover funcionario\n");
+        printf("=> 0 - Sair e Salvar\n");
         printf("Escolha uma opcao: ");
         scanf("%d", &opcao);
+
 
         switch (opcao) {
             case 1:
                 system("cls");
                 int cod;
                 char *nome = malloc(sizeof(char)*255);
-                char *cargo = malloc(sizeof(char)*50);
+                char *cargo = malloc(sizeof(char)*100);
                 double salario; 
                 
-                printf("\n--- NOVO CADASTRO ---\n");
+                printf("\n=== NOVO CADASTRO ===\n");
                 printf("Codigo: "); 
                 scanf("%d", &cod);
 
@@ -137,7 +151,7 @@ int main() {
                 scanf("%lf", &salario);
                 
                 cadastrar(nome, cod, cargo, salario);
-                printf("Funcionario cadastrado com sucesso!");
+                printf("\n=> Funcionario cadastrado com sucesso!\n\n");
                 
                 break;
                 
@@ -150,7 +164,7 @@ int main() {
                 system("cls");
                 printf("Digite o codigo para buscar: ");
                 scanf("%d", &cod);
-                buscar_funcionario(cod);
+                buscar(cod);
                 break;
                 
             case 4:
