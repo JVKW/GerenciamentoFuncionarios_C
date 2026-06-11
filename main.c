@@ -82,7 +82,6 @@ void listar_funcionarios(){
 //logica para percorrer a lista e imprimir
 
 
-
 }
 NO * buscar_funcionario(int codigo){
 //logica para buscar funcionarios recebendo o codigo do funcionario como parametro
@@ -96,18 +95,14 @@ NO * buscar_funcionario(int codigo){
 }
 
 
-int main() {
-    //pra ler do teclado
-    int cod;
-    char *nome;
-    char *cargo;
-    double sal;
+int main() {    
 
     // Tenta carregar o arquivo logo ao abrir o programa
     carregar_dados();
     int opcao;
 
     do {
+        system("cls");
         printf("\n============================\n");
         printf("    MENU DE FUNCIONARIOS    \n");
         printf("============================\n\n");
@@ -123,17 +118,27 @@ int main() {
         switch (opcao) {
             case 1:
                 system("cls");
+                int cod;
+                char *nome = malloc(sizeof(char)*255);
+                char *cargo = malloc(sizeof(char)*50);
+                double salario; 
+                
                 printf("\n--- NOVO CADASTRO ---\n");
                 printf("Codigo: "); 
                 scanf("%d", &cod);
+
                 printf("Nome: "); 
                 scanf(" %[^\n]", nome); 
+
                 printf("Cargo: "); 
                 scanf(" %[^\n]", cargo); 
+
                 printf("Salario: "); 
-                scanf("%lf", &sal);
+                scanf("%lf", &salario);
                 
-                cadastrar(nome, cod, cargo, sal);
+                cadastrar(nome, cod, cargo, salario);
+                printf("Funcionario cadastrado com sucesso!");
+                
                 break;
                 
             case 2:
