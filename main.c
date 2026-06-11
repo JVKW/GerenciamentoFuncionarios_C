@@ -82,7 +82,7 @@ void listar_funcionarios(){
     //logica para percorrer a lista e imprimir
     NO *aux = inicio;
     if(aux == NULL){
-        printf("=> Ainda nao ha funcionarios cadastrados. Por favor, cadastre-os!");
+        printf("=> Ainda nao ha funcionarios cadastrados.\n\n");
     }else{
         printf("=== LISTA DE FUNCIONARIOS ===\n\n");
         while (aux != NULL){
@@ -96,11 +96,29 @@ void listar_funcionarios(){
     }
     
 }
+
 NO * buscar(int codigo){
 //logica para buscar funcionarios recebendo o codigo do funcionario como parametro
     NO * aux = inicio;
-    while(aux->codigo != codigo){
+
+    if(inicio == NULL){
+        printf("=> A lista de funcionarios esta vazia.\n\n");
+        return NULL;
+    }
+    printf("\n=== BUSCA DE FUNCIONARIO ===\n\n");
+    while(aux != NULL && aux->codigo != codigo){
         aux = aux->prox;
+    }
+        
+    if(aux == NULL){
+        printf("=> Nenhum funcionario encontrado com o codigo: %d\n\n", codigo);
+    }else{
+        printf("=> Funcionario encontrado com o codigo '%d'!\n", codigo);
+        printf("    Nome: %s\n", aux->nome);
+        printf("    Codigo: %d\n", aux->codigo);
+        printf("    Cargo: %s\n", aux->cargo);
+        printf("    Salario: R$ %.2lf\n", aux->salario);
+        printf("_______________________________\n\n");
     }
 
     return aux;
@@ -109,10 +127,10 @@ NO * buscar(int codigo){
 
 
 int main() {    
-
     // Tenta carregar o arquivo logo ao abrir o programa
     carregar_dados();
     int opcao;
+    int cod; 
     system("cls");
 
     do {
@@ -132,7 +150,6 @@ int main() {
         switch (opcao) {
             case 1:
                 system("cls");
-                int cod;
                 char *nome = malloc(sizeof(char)*255);
                 char *cargo = malloc(sizeof(char)*100);
                 double salario; 
@@ -162,6 +179,7 @@ int main() {
                 
             case 3:
                 system("cls");
+                printf("\n=== BUSCAR FUNCIONARIO ===\n");
                 printf("Digite o codigo para buscar: ");
                 scanf("%d", &cod);
                 buscar(cod);
