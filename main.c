@@ -2,6 +2,90 @@
 #include <stdio.h>
 #include <string.h>
 
+// APP_PATH_H
+// # inicio
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+
+#ifdef _WIN32
+    #include <direct.h>
+    #define MKDIR(path) _mkdir(path)
+    #define SEP "\\"
+#elif __APPLE__
+    #include <sys/types.h>
+    #define MKDIR(path) mkdir(path, 0755)
+    #define SEP "/"
+#else
+    #include <sys/types.h>
+    #define MKDIR(path) mkdir(path, 0755)
+    #define SEP "/"
+#endif
+
+// char *destino : Buffer de saída, ponteiro para string que o caminho deve ser salvo
+// size_t tamanho : Tamanho do Buffer *destino para evitar overflow
+    // * recomendável usar sizeoff()
+// const char *nomeProjeto : Auto-Explicativo, nome do path para ser salvo
+int obter_diretorio_app(char *destino, size_t tamanho, const char *nomeProjeto) {
+
+    #ifdef _WIN32
+        const char *base = getenv("APPDATA");
+        if (!base) return 0;
+
+        snprintf(destino, tamanho, "%s%s%s", base, SEP, nomeProjeto);
+
+    #elif __APPLE__
+        const char *home = getenv("HOME");
+        if (!home) return 0;
+
+        snprintf(destino, tamanho,
+                "%s/Library/Application Support/%s",
+                home, nomeProjeto);
+
+    #else
+        const char *home = getenv("HOME");
+        if (!home) return 0;
+
+        snprintf(destino, tamanho,
+                "%s/.local/share/%s",
+                home, nomeProjeto);
+    #endif
+
+        return 1;
+}
+
+// const char *caminho : verifica se *caminho existe
+int diretorio_existe(const char *caminho) {
+    struct stat info;
+    return (stat(caminho, &info) == 0) && (info.st_mode & S_IFDIR);
+}
+// saídas :
+// 1 : existe (diretorio)
+// 0 : nao existe (ou nao e diretorio)
+
+
+void inicializar_path_app(const char *path_usr) {
+    if (diretorio_existe(path_usr)) {
+        printf("Diretorio ja existente.\n");
+    } else {
+        printf("Diretorio nao existente. Criando...\n");
+
+        if (MKDIR(path_usr) == 0) {
+            printf("Diretorio criado com sucesso.\n");
+        } else {
+            perror("Erro ao criar pasta");
+        }
+    }
+}
+
+// RESUMO
+// * obter_diretorio_app() : Monta o caminho do diretorio app no sistema
+// * diretorio_existe() : Verifica se o caminho passado ja existe
+// * inicializar_path_app() : Garante que a pasta exista (se nao existir, cria)
+
+// # fim
+
 void limpar_terminal() {
 #ifdef _WIN32
     system("cls");
