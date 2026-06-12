@@ -74,9 +74,6 @@ void cadastrar(char *nome, int codigo, char *cargo, double salario){
     }
 
 }
-
-// Salva o estado atual da lista encadeadada no arquivo funcionarios.dat
-// Caso haja dados salvos, o conteúdo do arquivo é substituído
 void salvar_dados(NO * inicio){
     FILE * arq_func = fopen(ARQUIVO_FUNCIONARIOS, "w");
 
@@ -150,14 +147,105 @@ void carregar_dados() {
     printf("Dados carregados com sucesso. Total de funcionarios: %d\n", tam);
 }
 
+void carregar_dados() {
+    FILE *arq_func = fopen(ARQUIVO_FUNCIONARIOS, "r");
+    
+    if (arq_func == NULL) {
+        printf("Arquivo de dados nao encontrado ou erro ao abrir.\n");
+        return;
+    }
+
+    char linha[4096]; // Variável armazenar uma linha completa do arquivo
+
+    while (fgets(linha, sizeof(linha), arq_func) != NULL) {
+        
+        // Remove o caractere de nova linha (\n) do final, se existir
+        linha[strcspn(linha, "\n")] = 0;
+
+        // Separa os dados usando a vírgula
+        char *_nome = strtok(linha, ",");
+        char *_codigo = strtok(NULL, ",");
+        char *_cargo = strtok(NULL, ",");
+        char *_salario = strtok(NULL, ",");
+
+        // Garante que todos os campos foram extraídos com sucesso
+        if (_nome && _codigo && _cargo && _salario) {
+            int codigo = atoi(_codigo);
+            double salario = atof(_salario);
+
+            // Alocação de memória individual para as strings.
+            char *nome_copia = malloc(strlen(_nome) + 1);
+            char *cargo_copia = malloc(strlen(_cargo) + 1);
+
+            if (nome_copia != NULL && cargo_copia != NULL) {
+                strcpy(nome_copia, _nome);
+                strcpy(cargo_copia, _cargo);
+
+                cadastrar(nome_copia, codigo, cargo_copia, salario);
+            } else {
+                printf("Erro de alocacao de memoria ao ler registro.\n");
+                free(nome_copia);
+                free(cargo_copia);
+            }
+        }
+    }
+
+    fclose(arq_func);
+    printf("Dados carregados com sucesso. Total de funcionarios: %d\n", tam);
+}
+
 void alterar(){
     //evidentemente tambÃ©m com base na posição desejada, ai imprime a atual situação do funcionario e modifica o que for necessário
 
 }
 
-void remover(){
-    //remover com base na posição desejada, se a posição nao existir imprima quais posições existem.
 
+void imprimir_removido(NO* Funcionario){
+    printf("\n=== FUNCIONARIO REMOVIDO ===\n\n");
+    printf("Nome: %s\n", Funcionario->nome);
+    printf("Codigo: %d\n", Funcionario->codigo);
+    printf("Cargo: %s\n", Funcionario->cargo);
+}
+
+NO* remover(int codigo){
+//remover com base no codigo desejada, se a posição nao existir imprima quais posições existem.
+    if(inicio == NULL){
+        return NULL;
+    }
+    if(inicio->codigo == codigo){ //inicio
+        NO *aux = inicio;
+        inicio = inicio->prox;
+        inicio->ant = NULL;
+        if(tam == 1){
+            fim = NULL;
+        }
+        //free(aux);
+        imprimir_removido(aux);
+        tam--;
+        return aux;
+    }else if(fim->codigo == codigo){ // fim
+        NO *aux = fim;
+        fim->ant->prox = NULL;
+        fim = fim->ant;
+        //free(aux);
+        imprimir_removido(aux);
+        tam--;
+        return aux;
+    }else{
+        //meio....
+        NO *aux = inicio;
+        NO *lixo = aux;
+        while(aux->prox->codigo != codigo){
+            aux = aux->prox;
+        }
+        lixo = aux->prox;
+        aux->prox = lixo->prox;
+        aux->prox->ant = aux; 
+        //free(lixo);
+        imprimir_removido(lixo);
+        tam--;
+        return lixo;
+    }
 }
 
 void listar_funcionarios(){
@@ -179,7 +267,7 @@ void listar_funcionarios(){
     
 }
 
-NO * buscar(int codigo){
+NO * buscar(int codigo){ 
 //logica para buscar funcionarios recebendo o codigo do funcionario como parametro
     NO * aux = inicio;
 
@@ -187,7 +275,6 @@ NO * buscar(int codigo){
         printf("=> A lista de funcionarios esta vazia.\n\n");
         return NULL;
     }
-    printf("\n=== BUSCA DE FUNCIONARIO ===\n\n");
     while(aux != NULL && aux->codigo != codigo){
         aux = aux->prox;
     }
@@ -206,6 +293,56 @@ NO * buscar(int codigo){
     return aux;
 
 }
+
+void alterar(NO *funcionario){
+    //evidentemente também com base na posição desejada, ai imprime a atual situação do funcionario e modifica o que for necessário
+    if(funcionario == NULL){
+        return;
+    }else{
+        int opcao;
+        do{
+            printf("=> 1 - Alterar Nome\n");
+            printf("=> 2 - Alterar Cargo\n");
+            printf("=> 3 - Alterar Salario\n");
+            printf("=> 0 - Concluir\n");
+            printf("Escolha uma opcao: ");
+            scanf("%d", &opcao);
+
+            switch (opcao){
+            case 1:{
+                char novo_nome[255];
+                printf("Digite o novo nome para %s: ", funcionario->nome);
+                scanf(" %[^\n]", novo_nome);
+                strcpy(funcionario->nome, novo_nome);
+                break;
+            }
+            case 2:{
+                char novo_cargo[255];
+                printf("Digite o novo cargo %s: ", funcionario->nome);
+                scanf(" %[^\n]", novo_cargo);
+                strcpy(funcionario->cargo, novo_cargo);
+                break;
+            }
+            case 3:
+                printf("Digite o novo salario de %s: ", funcionario->nome);
+                scanf("%lf", &funcionario->salario);
+                break;
+            case 0:
+                system("cls");
+                printf("\nAlteracoes concluidas!\n");
+                break;
+        
+            default:
+                system("cls");
+                printf("Opcao invalida!\n");
+                break;
+            }
+        } while (opcao != 0);
+        
+    }
+}
+
+
 
 
 int main() {    
@@ -273,23 +410,27 @@ int main() {
                 pressionar_enter();
                 break;
                 
-            case 4:
-                limpar_terminal();
+            case 4:{
+                system("cls");
+                printf("\n=== ALTERAR FUNCIONARIO ===\n");
                 printf("Digite o codigo para alterar: ");
                 scanf("%d", &cod);
-                alterar();
-                
-                pressionar_enter();
+                NO *alterarFuncionario = buscar(cod);
+                alterar(alterarFuncionario);
                 break;
+            }
+                
                 
             case 5:
-                limpar_terminal();
+                system("cls");
+                printf("\n=== REMOVER FUNCIONARIO ===\n");
                 printf("Digite o codigo para remover: ");
                 scanf("%d", &cod);
-                remover();
-                
-                pressionar_enter();
+                remover(cod) == NULL ? 
+                        printf("=> Nenhum funcionario cadastrado."):
+                        printf("Usuario com codigo %d removido da lista de funcionarios.\n", cod);
                 break;
+                
                 
             case 0:
                 limpar_terminal();
