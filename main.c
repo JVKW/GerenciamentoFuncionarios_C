@@ -22,27 +22,51 @@ void cadastrar(char *nome, int codigo, char *cargo, double salario){
     //cadastrar sem nenhuma condição necessariamente, a diferença é que a gente pode voltar pra um funcionario anterior se quiser.
 
 
-    }
-void salvar_dados (){
-    //salvar os dados em arquivos
-
-
 }
+
+// Salva o estado atual da lista encadeadada no arquivo funcionarios.dat
+// Caso haja dados salvos, o conteúdo do arquivo é substituído
+void salvar_dados(NO * inicio){
+    FILE * arq_func = fopen("funcionarios.dat", "w");
+
+    if (arq_func == NULL) {
+        printf("Erro ao abrir o arquivo.\n");
+        return; // fazer verificação depois
+    }
+
+    NO * aux = inicio;
+    while (aux != NULL) {
+        fprintf(
+            arq_func,
+            "%s,%d,%s,%.2lf\n",
+            aux->nome,
+            aux->codigo,
+            aux->cargo,
+            aux->salario
+        );
+
+        aux = aux->prox;
+    }
+
+    fclose(arq_func);
+    printf("Dados salvos com sucesso.\n");
+}
+
 void carregar_dados (){
     //carregar os dados em arquivos
 
 
 }
+
 void alterar(){
     //evidentemente tambÃ©m com base na posição desejada, ai imprime a atual situação do funcionario e modifica o que for necessário
 
 }
 
-
 void remover(){
     //remover com base na posição desejada, se a posição nao existir imprima quais posições existem.
 
-    }
+}
 
 void listar_funcionarios(){
 //logica para percorrer a lista e imprimir
@@ -63,6 +87,8 @@ int main() {
     char *nome;
     char *cargo;
     double sal;
+
+    return 0;
 
     // Tenta carregar o arquivo logo ao abrir o programa
     carregar_dados();
@@ -93,7 +119,7 @@ int main() {
                 printf("Salario: "); 
                 scanf("%lf", &sal);
                 
-                cadastrar(nome, cod, cargo, sal);
+                // cadastrar(nome, cod, cargo, sal);
                 break;
                 
             case 2:
@@ -120,7 +146,7 @@ int main() {
                 
             case 0:
                 printf("\nEncerrando o programa...\n");
-                salvar_dados(); //pro documento ficar salvo la na funcao
+                salvar_dados(inicio); //pro documento ficar salvo la na funcao
                 break;
                 
             default:
