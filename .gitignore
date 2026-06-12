@@ -1,0 +1,12 @@
+*.exe
+output/*
+.vscode/*
+.idea/*
+*.log
+*.tmp
+*.bak
+dist/
+build/
+coverage/
+*.env
+*.dat
