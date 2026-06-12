@@ -35,7 +35,16 @@ NO *inicio = NULL;
 NO *fim = NULL;
 int tam = 0;
 
-void cadastrar(char *nome, int codigo, char *cargo, double salario){
+int cadastrar(char *nome, int codigo, char *cargo, double salario){
+    NO*busca = inicio;
+
+    while(busca != NULL){
+        if(busca->codigo == codigo){
+            printf("Erro: ja existe um funcionario com o codigo %d", codigo);
+            return 0;
+        }
+        busca = busca->prox;
+    }
     NO *novo = malloc(sizeof(NO));
     novo->nome = nome;
     novo->codigo = codigo;
@@ -73,7 +82,9 @@ void cadastrar(char *nome, int codigo, char *cargo, double salario){
         }
     }
 
+    return 1;
 }
+
 void salvar_dados(NO * inicio){
     FILE * arq_func = fopen(ARQUIVO_FUNCIONARIOS, "w");
 
@@ -144,60 +155,8 @@ void carregar_dados() {
     }
 
     fclose(arq_func);
-    printf("Dados carregados com sucesso. Total de funcionarios: %d\n", tam);
 }
 
-void carregar_dados() {
-    FILE *arq_func = fopen(ARQUIVO_FUNCIONARIOS, "r");
-    
-    if (arq_func == NULL) {
-        printf("Arquivo de dados nao encontrado ou erro ao abrir.\n");
-        return;
-    }
-
-    char linha[4096]; // Variável armazenar uma linha completa do arquivo
-
-    while (fgets(linha, sizeof(linha), arq_func) != NULL) {
-        
-        // Remove o caractere de nova linha (\n) do final, se existir
-        linha[strcspn(linha, "\n")] = 0;
-
-        // Separa os dados usando a vírgula
-        char *_nome = strtok(linha, ",");
-        char *_codigo = strtok(NULL, ",");
-        char *_cargo = strtok(NULL, ",");
-        char *_salario = strtok(NULL, ",");
-
-        // Garante que todos os campos foram extraídos com sucesso
-        if (_nome && _codigo && _cargo && _salario) {
-            int codigo = atoi(_codigo);
-            double salario = atof(_salario);
-
-            // Alocação de memória individual para as strings.
-            char *nome_copia = malloc(strlen(_nome) + 1);
-            char *cargo_copia = malloc(strlen(_cargo) + 1);
-
-            if (nome_copia != NULL && cargo_copia != NULL) {
-                strcpy(nome_copia, _nome);
-                strcpy(cargo_copia, _cargo);
-
-                cadastrar(nome_copia, codigo, cargo_copia, salario);
-            } else {
-                printf("Erro de alocacao de memoria ao ler registro.\n");
-                free(nome_copia);
-                free(cargo_copia);
-            }
-        }
-    }
-
-    fclose(arq_func);
-    printf("Dados carregados com sucesso. Total de funcionarios: %d\n", tam);
-}
-
-void alterar(){
-    //evidentemente tambÃ©m com base na posição desejada, ai imprime a atual situação do funcionario e modifica o que for necessário
-
-}
 
 
 void imprimir_removido(NO* Funcionario){
@@ -328,12 +287,12 @@ void alterar(NO *funcionario){
                 scanf("%lf", &funcionario->salario);
                 break;
             case 0:
-                system("cls");
+                limpar_terminal();
                 printf("\nAlteracoes concluidas!\n");
                 break;
         
             default:
-                system("cls");
+                limpar_terminal();
                 printf("Opcao invalida!\n");
                 break;
             }
@@ -348,10 +307,9 @@ void alterar(NO *funcionario){
 int main() {    
     // Tenta carregar o arquivo logo ao abrir o programa
     carregar_dados();
-    int opcao;
+    int opcao = -1;
     int cod; 
     limpar_terminal();
-
     do {
         printf("\n============================\n");
         printf("    MENU DE FUNCIONARIOS    \n");
@@ -386,9 +344,12 @@ int main() {
                 printf("\nSalario: "); 
                 scanf("%lf", &salario);
                 
-                cadastrar(nome, cod, cargo, salario);
-                printf("\n=> Funcionario cadastrado com sucesso!\n\n");
-                
+                if(cadastrar(nome, cod, cargo, salario)){
+                    printf("\n=> Funcionario cadastrado com sucesso!\n\n");
+                }else{
+                    free(nome);
+                    free(cargo);
+                }
                 
                 pressionar_enter();
                 break;
@@ -411,24 +372,28 @@ int main() {
                 break;
                 
             case 4:{
-                system("cls");
+                limpar_terminal();
                 printf("\n=== ALTERAR FUNCIONARIO ===\n");
                 printf("Digite o codigo para alterar: ");
                 scanf("%d", &cod);
                 NO *alterarFuncionario = buscar(cod);
                 alterar(alterarFuncionario);
+                pressionar_enter();
                 break;
             }
                 
                 
             case 5:
-                system("cls");
+                limpar_terminal();
                 printf("\n=== REMOVER FUNCIONARIO ===\n");
                 printf("Digite o codigo para remover: ");
                 scanf("%d", &cod);
-                remover(cod) == NULL ? 
-                        printf("=> Nenhum funcionario cadastrado."):
-                        printf("Usuario com codigo %d removido da lista de funcionarios.\n", cod);
+                if (remover(cod) == NULL) {
+                    printf("\n=> Nenhum funcionario encontrado com o codigo %d.\n", cod);
+                } else {
+                    printf("\n=> Usuario com codigo %d removido com sucesso!\n", cod);
+                }
+                pressionar_enter();
                 break;
                 
                 
@@ -437,7 +402,7 @@ int main() {
                 printf("\nEncerrando o programa...\n");
                 salvar_dados(inicio); //pro documento ficar salvo la na funcao
                 
-                pressionar_enter();
+                
                 break;
                 
             default:
