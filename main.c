@@ -277,7 +277,7 @@ void alterar(NO *funcionario){
             }
             case 2:{
                 char novo_cargo[255];
-                printf("Digite o novo cargo %s: ", funcionario->nome);
+                printf("Digite o novo cargo para %s: ", funcionario->nome);
                 scanf(" %[^\n]", novo_cargo);
                 strcpy(funcionario->cargo, novo_cargo);
                 break;
