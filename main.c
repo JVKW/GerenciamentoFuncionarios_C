@@ -1,13 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-// APP_PATH_H
-// # inicio
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
+#include <ctype.h> // Incluído para fazer o isdigit funcionar
 
 #ifdef _WIN32
     #include <direct.h>
@@ -23,68 +18,45 @@
     #define SEP "/"
 #endif
 
-// char *destino : Buffer de saída, ponteiro para string que o caminho deve ser salvo
-// size_t tamanho : Tamanho do Buffer *destino para evitar overflow
-    // * recomendável usar sizeoff()
-// const char *nomeProjeto : Auto-Explicativo, nome do path para ser salvo
-int obter_diretorio_app(char *destino, size_t tamanho, const char *nomeProjeto) {
+// ==========================================
+//          CORES ANSI PARA A UX 
+// ==========================================
+#define ANSI_RESET   "\x1b[0m"
+#define ANSI_BOLD    "\x1b[1m"
+#define ANSI_RED     "\x1b[31m"
+#define ANSI_GREEN   "\x1b[32m"
+#define ANSI_YELLOW  "\x1b[33m"
+#define ANSI_BLUE    "\x1b[34m"
+#define ANSI_CYAN    "\x1b[36m"
+#define ANSI_WHITE   "\x1b[37m"
 
+int obter_diretorio_app(char *destino, size_t tamanho, const char *nomeProjeto) {
     #ifdef _WIN32
         const char *base = getenv("APPDATA");
         if (!base) return 0;
-
         snprintf(destino, tamanho, "%s%s%s", base, SEP, nomeProjeto);
-
     #elif __APPLE__
         const char *home = getenv("HOME");
         if (!home) return 0;
-
-        snprintf(destino, tamanho,
-                "%s/Library/Application Support/%s",
-                home, nomeProjeto);
-
+        snprintf(destino, tamanho, "%s/Library/Application Support/%s", home, nomeProjeto);
     #else
         const char *home = getenv("HOME");
         if (!home) return 0;
-
-        snprintf(destino, tamanho,
-                "%s/.local/share/%s",
-                home, nomeProjeto);
+        snprintf(destino, tamanho, "%s/.local/share/%s", home, nomeProjeto);
     #endif
-
-        return 1;
+    return 1;
 }
 
-// const char *caminho : verifica se *caminho existe
 int diretorio_existe(const char *caminho) {
     struct stat info;
     return (stat(caminho, &info) == 0) && (info.st_mode & S_IFDIR);
 }
-// saídas :
-// 1 : existe (diretorio)
-// 0 : nao existe (ou nao e diretorio)
-
 
 void inicializar_path_app(const char *path_usr) {
-    if (diretorio_existe(path_usr)) {
-        printf("Diretorio ja existente.\n");
-    } else {
-        printf("Diretorio nao existente. Criando...\n");
-
-        if (MKDIR(path_usr) == 0) {
-            printf("Diretorio criado com sucesso.\n");
-        } else {
-            perror("Erro ao criar pasta");
-        }
+    if (!diretorio_existe(path_usr)) {
+        MKDIR(path_usr);
     }
 }
-
-// RESUMO
-// * obter_diretorio_app() : Monta o caminho do diretorio app no sistema
-// * diretorio_existe() : Verifica se o caminho passado ja existe
-// * inicializar_path_app() : Garante que a pasta exista (se nao existir, cria)
-
-// # fim
 
 void limpar_terminal() {
 #ifdef _WIN32
@@ -95,403 +67,424 @@ void limpar_terminal() {
 }
 
 void pressionar_enter() {
-    printf("\nPressione ENTER para continuar...");
-    while (getchar() != '\n');
+    printf("\n" ANSI_YELLOW "➔ Pressione ENTER para continuar..." ANSI_RESET);
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
     getchar();
     limpar_terminal();
 }
 
 #define ARQUIVO_FUNCIONARIOS "funcionarios.dat"
 
-typedef struct Funcionario{
-
-    char *nome;
+typedef struct Funcionario {
+    char nome[255];
     int codigo;
-    char *cargo;
+    char cargo[100];
     double salario;
-
     struct Funcionario *prox;
     struct Funcionario *ant;
-
-}NO;
+} NO;
 
 NO *inicio = NULL;
 NO *fim = NULL;
 int tam = 0;
 
-int cadastrar(char *nome, int codigo, char *cargo, double salario){
-    NO*busca = inicio;
+int string_contem_numeros(const char *str) {
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (isdigit((unsigned char)str[i])) {
+            return 1; 
+        }
+    }
+    return 0; 
+}
 
+int cadastrar(char *nome, int codigo, char *cargo, double salario){
+    NO* busca = inicio;
     while(busca != NULL){
         if(busca->codigo == codigo){
-            printf("Erro: ja existe um funcionario com o codigo %d", codigo);
+            printf("\n" ANSI_RED "✖ Erro: já existe um funcionario com o codigo %d" ANSI_RESET "\n", codigo);
             return 0;
         }
         busca = busca->prox;
     }
+    
     NO *novo = malloc(sizeof(NO));
-    novo->nome = nome;
+    if(!novo) return 0;
+
     novo->codigo = codigo;
-    novo->cargo = cargo;
+    strcpy(novo->nome, nome);
+    strcpy(novo->cargo, cargo);
     novo->salario = salario;
     novo->prox = NULL;
     novo->ant = NULL;
 
-    if(inicio == NULL){ //lista vazia
+    if(inicio == NULL){ 
         inicio = novo;
         fim = novo;
-        tam++;
-    }else{ // lista nao esta vazia
-        if(novo->codigo < inicio->codigo){ // caso do inicio
+    }else{ 
+        if(novo->codigo < inicio->codigo){ 
             novo->prox = inicio;
             inicio->ant = novo;
             inicio = novo;
-            tam++;
-        }else if(novo->codigo > fim->codigo){ //caso do fim
+        }else if(novo->codigo > fim->codigo){ 
             fim->prox = novo;
             novo->ant = fim;
             fim = novo;
-            tam++;
         }else{
-            //meio
             NO* aux = inicio;
             while(aux->prox->codigo < novo->codigo){
                 aux = aux->prox;
             }
-            novo->prox =aux->prox;
+            novo->prox = aux->prox;
             novo->ant = aux;
             aux->prox->ant = novo;
             aux->prox = novo;
-            tam++;
         }
     }
-
+    tam++;
     return 1;
 }
 
-void salvar_dados(NO * inicio){
-    FILE * arq_func = fopen(ARQUIVO_FUNCIONARIOS, "w");
+void salvar_dados(const char *path_usr){
+    char caminho_completo[1024];
+    snprintf(caminho_completo, sizeof(caminho_completo), "%s%s%s", path_usr, SEP, ARQUIVO_FUNCIONARIOS);
 
+    FILE * arq_func = fopen(caminho_completo, "w");
     if (arq_func == NULL) {
-        printf("Erro ao abrir o arquivo.\n");
-        return; // fazer verificação depois
+        printf(ANSI_RED "✖ Erro ao abrir o arquivo para salvar." ANSI_RESET "\n");
+        return; 
     }
 
     NO * aux = inicio;
     while (aux != NULL) {
-        fprintf(
-            arq_func,
-            "%s,%d,%s,%.2lf\n",
-            aux->nome,
-            aux->codigo,
-            aux->cargo,
-            aux->salario
-        );
-
+        fprintf(arq_func, "%s;%d;%s;%.2lf\n", aux->nome, aux->codigo, aux->cargo, aux->salario);
         aux = aux->prox;
     }
-
     fclose(arq_func);
-    printf("Dados salvos com sucesso.\n");
+    printf(ANSI_GREEN "✔ Dados salvos com sucesso em: %s" ANSI_RESET "\n", caminho_completo);
 }
 
-void carregar_dados() {
-    FILE *arq_func = fopen(ARQUIVO_FUNCIONARIOS, "r");
-    
-    if (arq_func == NULL) {
-        printf("Arquivo de dados nao encontrado ou erro ao abrir.\n");
-        return;
-    }
+void carregar_dados(const char *path_usr) {
+    char caminho_completo[1024];
+    snprintf(caminho_completo, sizeof(caminho_completo), "%s%s%s", path_usr, SEP, ARQUIVO_FUNCIONARIOS);
 
-    char linha[4096]; // Variável armazenar uma linha completa do arquivo
+    FILE *arq_func = fopen(caminho_completo, "r");
+    if (arq_func == NULL) return;
 
+    char linha[4096]; 
     while (fgets(linha, sizeof(linha), arq_func) != NULL) {
-        
-        // Remove o caractere de nova linha (\n) do final, se existir
-        linha[strcspn(linha, "\n")] = 0;
+        linha[strcspn(linha, "\n\r")] = 0;
 
-        // Separa os dados usando a vírgula
-        char *_nome = strtok(linha, ",");
-        char *_codigo = strtok(NULL, ",");
-        char *_cargo = strtok(NULL, ",");
-        char *_salario = strtok(NULL, ",");
+        char *_nome = strtok(linha, ";");
+        char *_codigo = strtok(NULL, ";");
+        char *_cargo = strtok(NULL, ";");
+        char *_salario = strtok(NULL, ";");
 
-        // Garante que todos os campos foram extraídos com sucesso
         if (_nome && _codigo && _cargo && _salario) {
-            int codigo = atoi(_codigo);
-            double salario = atof(_salario);
-
-            // Alocação de memória individual para as strings.
-            char *nome_copia = malloc(strlen(_nome) + 1);
-            char *cargo_copia = malloc(strlen(_cargo) + 1);
-
-            if (nome_copia != NULL && cargo_copia != NULL) {
-                strcpy(nome_copia, _nome);
-                strcpy(cargo_copia, _cargo);
-
-                cadastrar(nome_copia, codigo, cargo_copia, salario);
-            } else {
-                printf("Erro de alocacao de memoria ao ler registro.\n");
-                free(nome_copia);
-                free(cargo_copia);
-            }
+            cadastrar(_nome, atoi(_codigo), _cargo, atof(_salario));
         }
     }
-
     fclose(arq_func);
 }
 
-
-
 void imprimir_removido(NO* Funcionario){
-    printf("\n=== FUNCIONARIO REMOVIDO ===\n\n");
-    printf("Nome: %s\n", Funcionario->nome);
-    printf("Codigo: %d\n", Funcionario->codigo);
-    printf("Cargo: %s\n", Funcionario->cargo);
+    printf("\n" ANSI_YELLOW "┌────────────────────────────────────────┐\n");
+    printf("│        FUNCIONÁRIO REMOVIDO            │\n");
+    printf("├────────────────────────────────────────┤\n");
+    printf("│ Código: %-30d │\n", Funcionario->codigo);
+    printf("│ Nome:   %-30s │\n", Funcionario->nome);
+    printf("│ Cargo:  %-30s │\n", Funcionario->cargo);
+    printf("└────────────────────────────────────────┘" ANSI_RESET "\n");
 }
 
 NO* remover(int codigo){
-//remover com base no codigo desejada, se a posição nao existir imprima quais posições existem.
-    if(inicio == NULL){
-        return NULL;
+    if(inicio == NULL) return NULL;
+    
+    NO *aux = inicio;
+    while (aux != NULL && aux->codigo != codigo) {
+        aux = aux->prox;
     }
-    if(inicio->codigo == codigo){ //inicio
-        NO *aux = inicio;
+    
+    if (aux == NULL) return NULL;
+
+    if(aux == inicio){ 
         inicio = inicio->prox;
-        inicio->ant = NULL;
-        if(tam == 1){
+        if(inicio != NULL) {
+            inicio->ant = NULL;
+        } else {
             fim = NULL;
         }
-        //free(aux);
-        imprimir_removido(aux);
-        tam--;
-        return aux;
-    }else if(fim->codigo == codigo){ // fim
-        NO *aux = fim;
-        fim->ant->prox = NULL;
+    }else if(aux == fim){ 
         fim = fim->ant;
-        //free(aux);
-        imprimir_removido(aux);
-        tam--;
-        return aux;
+        fim->prox = NULL;
     }else{
-        //meio....
-        NO *aux = inicio;
-        NO *lixo = aux;
-        while(aux->prox->codigo != codigo){
-            aux = aux->prox;
-        }
-        lixo = aux->prox;
-        aux->prox = lixo->prox;
-        aux->prox->ant = aux; 
-        //free(lixo);
-        imprimir_removido(lixo);
-        tam--;
-        return lixo;
+        aux->ant->prox = aux->prox;
+        aux->prox->ant = aux->ant;
     }
+    
+    imprimir_removido(aux);
+    free(aux); 
+    tam--;
+    return aux;
 }
 
 void listar_funcionarios(){
-    //logica para percorrer a lista e imprimir
     NO *aux = inicio;
     if(aux == NULL){
-        printf("=> Ainda nao ha funcionarios cadastrados.\n\n");
+        printf(ANSI_YELLOW "⚠ Ainda não há funcionários cadastrados." ANSI_RESET "\n\n");
     }else{
-        printf("=== LISTA DE FUNCIONARIOS ===\n\n");
+        printf(ANSI_CYAN ANSI_BOLD "=== LISTA DE COLABORADORES (%d cadastrados) ===\n" ANSI_RESET, tam);
+        printf(ANSI_WHITE "┌────────┬──────────────────────────────┬────────────────────────┬──────────────┐\n");
+        printf("│ Código │ Nome                         │ Cargo                  │ Salário      │\n");
+        printf("├────────┼──────────────────────────────┼────────────────────────┼──────────────┤\n");
         while (aux != NULL){
-            printf("    Nome: %s\n", aux->nome);
-            printf("    Codigo: %d\n", aux->codigo);
-            printf("    Cargo: %s\n", aux->cargo);
-            printf("    Salario: R$ %.2lf\n", aux->salario);
-            printf("_______________________________\n\n");
+            printf("│ %-6d │ %-28s │ %-22s │ R$ %-9.2lf │\n", 
+                   aux->codigo, aux->nome, aux->cargo, aux->salario);
             aux = aux->prox;
         }
+        printf("└────────┴──────────────────────────────┴────────────────────────┴──────────────┘\n" ANSI_RESET);
     }
-    
 }
 
 NO * buscar(int codigo){ 
-//logica para buscar funcionarios recebendo o codigo do funcionario como parametro
     NO * aux = inicio;
-
     if(inicio == NULL){
-        printf("=> A lista de funcionarios esta vazia.\n\n");
+        printf(ANSI_YELLOW "⚠ A lista de funcionários está vazia." ANSI_RESET "\n\n");
         return NULL;
     }
     while(aux != NULL && aux->codigo != codigo){
         aux = aux->prox;
     }
-        
     if(aux == NULL){
-        printf("=> Nenhum funcionario encontrado com o codigo: %d\n\n", codigo);
+        printf(ANSI_RED "✖ Nenhum funcionário encontrado com o código: %d" ANSI_RESET "\n\n", codigo);
     }else{
-        printf("=> Funcionario encontrado com o codigo '%d'!\n", codigo);
-        printf("    Nome: %s\n", aux->nome);
-        printf("    Codigo: %d\n", aux->codigo);
-        printf("    Cargo: %s\n", aux->cargo);
-        printf("    Salario: R$ %.2lf\n", aux->salario);
-        printf("_______________________________\n\n");
+        printf("\n" ANSI_GREEN "┌────────────────────────────────────────┐\n");
+        printf("│         REGISTRO ENCONTRADO            │\n");
+        printf("├────────────────────────────────────────┤\n");
+        printf("│ Código: %-30d │\n", aux->codigo);
+        printf("│ Nome:   %-30s │\n", aux->nome);
+        printf("│ Cargo:  %-30s │\n", aux->cargo);
+        printf("│ Salário: R$ %-27.2lf │\n", aux->salario);
+        printf("└────────────────────────────────────────┘" ANSI_RESET "\n");
     }
-
     return aux;
-
 }
 
 void alterar(NO *funcionario){
-    //evidentemente também com base na posição desejada, ai imprime a atual situação do funcionario e modifica o que for necessário
-    if(funcionario == NULL){
-        return;
-    }else{
-        int opcao;
-        do{
-            printf("=> 1 - Alterar Nome\n");
-            printf("=> 2 - Alterar Cargo\n");
-            printf("=> 3 - Alterar Salario\n");
-            printf("=> 0 - Concluir\n");
-            printf("Escolha uma opcao: ");
-            scanf("%d", &opcao);
+    if (funcionario == NULL) return;
+    int opcao;
+    char buffer[255]; 
+    double novo_salario;
 
-            switch (opcao){
-            case 1:{
-                char novo_nome[255];
-                printf("Digite o novo nome para %s: ", funcionario->nome);
-                scanf(" %[^\n]", novo_nome);
-                strcpy(funcionario->nome, novo_nome);
-                break;
-            }
-            case 2:{
-                char novo_cargo[255];
-                printf("Digite o novo cargo para %s: ", funcionario->nome);
-                scanf(" %[^\n]", novo_cargo);
-                strcpy(funcionario->cargo, novo_cargo);
-                break;
-            }
-            case 3:
-                printf("Digite o novo salario de %s: ", funcionario->nome);
-                scanf("%lf", &funcionario->salario);
-                break;
-            case 0:
-                limpar_terminal();
-                printf("\nAlteracoes concluidas!\n");
-                break;
-        
-            default:
-                limpar_terminal();
-                printf("Opcao invalida!\n");
-                break;
-            }
-        } while (opcao != 0);
-        
-    }
-}
-
-
-
-
-int main() {    
-    // Tenta carregar o arquivo logo ao abrir o programa
-    carregar_dados();
-    int opcao = -1;
-    int cod; 
-    limpar_terminal();
     do {
-        printf("\n============================\n");
-        printf("    MENU DE FUNCIONARIOS    \n");
-        printf("============================\n\n");
-        printf("=> 1 - Cadastrar funcionario\n");
-        printf("=> 2 - Listar funcionarios\n");
-        printf("=> 3 - Buscar funcionario\n");
-        printf("=> 4 - Alterar funcionario\n");
-        printf("=> 5 - Remover funcionario\n");
-        printf("=> 0 - Sair e Salvar\n");
-        printf("Escolha uma opcao: ");
-        scanf("%d", &opcao);
-
+        printf("\n" ANSI_CYAN "⚙ Modificando: %s (Cod: %d)" ANSI_RESET "\n", funcionario->nome, funcionario->codigo);
+        printf("  [" ANSI_WHITE "1" ANSI_RESET "] Alterar Nome\n");
+        printf("  [" ANSI_WHITE "2" ANSI_RESET "] Alterar Cargo\n");
+        printf("  [" ANSI_WHITE "3" ANSI_RESET "] Alterar Salário\n");
+        printf("  [" ANSI_WHITE "0" ANSI_RESET "] Concluir Alterações\n");
+        printf("Escolha uma opção: ");
+        if(scanf("%d", &opcao) != 1) { 
+             while(getchar()!='\n'); 
+             opcao = -1;
+        }
 
         switch (opcao) {
             case 1:
+                printf("Digite o novo nome: ");
+                scanf(" %[^\n]", buffer);
+                if (string_contem_numeros(buffer)) {
+                    printf(ANSI_RED "✖ Erro: Nome não pode conter números." ANSI_RESET "\n");
+                } else {
+                    strcpy(funcionario->nome, buffer); 
+                    printf(ANSI_GREEN "✔ Nome alterado com sucesso." ANSI_RESET "\n");
+                }
+                break;
+            case 2:
+                printf("Digite o novo cargo: ");
+                scanf(" %[^\n]", buffer);
+                if (string_contem_numeros(buffer)) {
+                    printf(ANSI_RED "✖ Erro: Cargo não pode conter números." ANSI_RESET "\n");
+                } else {
+                    strcpy(funcionario->cargo, buffer);
+                    printf(ANSI_GREEN "✔ Cargo alterado com sucesso." ANSI_RESET "\n");
+                }
+                break;
+            case 3:
+                printf("Digite o novo salário: ");
+                if(scanf("%lf", &novo_salario) != 1 || novo_salario <= 0) {
+                     printf(ANSI_RED "✖ Erro: Salário inválido." ANSI_RESET "\n");
+                     while(getchar()!='\n');
+                } else {
+                    funcionario->salario = novo_salario;
+                    printf(ANSI_GREEN "✔ Salário alterado com sucesso." ANSI_RESET "\n");
+                }
+                break;
+            case 0:
+                printf("\n" ANSI_GREEN "✔ Alterações concluídas!" ANSI_RESET "\n");
+                break;
+            default:
+                printf(ANSI_RED "⚠ Opção inválida!" ANSI_RESET "\n");
+                break;
+        }
+    } while (opcao != 0);
+}
+
+int main() {  
+    
+    #ifdef _WIN32
+        system("chcp 65001 > nul");
+    #endif
+    
+    char path_dados[1024];
+    if (!obter_diretorio_app(path_dados, sizeof(path_dados), "GerenciadorFuncionarios")) {
+        strcpy(path_dados, ".");
+    }
+    inicializar_path_app(path_dados);
+    carregar_dados(path_dados);
+
+    int opcao = -1;
+    int cod; 
+    limpar_terminal();
+
+    do {
+        // LETREIRO ASCII - Identidade Visual Forte para seu Portfólio
+        printf(ANSI_CYAN ANSI_BOLD);
+        printf("  ██████╗ ██████╗ ███╗   ███╗██████╗ \n");
+        printf(" ██╔════╝██╔═══██╗████╗ ████║██╔══██╗\n");
+        printf(" ██║     ██║   ██║██╔████╔██║██████╔╝\n");
+        printf(" ██║     ██║   ██║██║╚██╔╝██║██╔═══╝ \n");
+        printf(" ╚██████╗╚██████╔╝██║ ╚═╝ ██║██║     \n");
+        printf("  ╚══════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝     \n");
+        printf("  [ RH Management System v1.0 ]      \n" ANSI_RESET);
+        printf("  Armazenamento: " ANSI_WHITE "%s" ANSI_RESET "\n\n", path_dados);
+
+        printf(ANSI_BOLD "📌 MENU PRINCIPAL" ANSI_RESET "\n");
+        printf("  [" ANSI_CYAN "1" ANSI_RESET "] Cadastrar funcionário\n");
+        printf("  [" ANSI_CYAN "2" ANSI_RESET "] Listar funcionários\n");
+        printf("  [" ANSI_CYAN "3" ANSI_RESET "] Buscar funcionário\n");
+        printf("  [" ANSI_CYAN "4" ANSI_RESET "] Alterar funcionário\n");
+        printf("  [" ANSI_CYAN "5" ANSI_RESET "] Remover funcionário\n");
+        printf("  [" ANSI_RED "0" ANSI_RESET "] Sair e Salvar\n\n");
+        printf("Escolha uma opção: ");
+        
+        if (scanf("%d", &opcao) != 1) {
+            while(getchar() != '\n');
+            opcao = -1;
+        }
+
+        switch (opcao) {
+            case 1: {
                 limpar_terminal();
-                char *nome = malloc(sizeof(char)*255);
-                char *cargo = malloc(sizeof(char)*100);
-                double salario; 
+                char nome[255];   
+                char cargo[100];  
+                double salario;
+                int codigo_valido = 0;
                 
-                printf("\n=== NOVO CADASTRO ===\n");
-                printf("\nCodigo: "); 
-                scanf("%d", &cod);
+                printf(ANSI_CYAN ANSI_BOLD "\n=== NOVO CADASTRO ===" ANSI_RESET "\n");
 
-                printf("\nNome: "); 
-                scanf(" %[^\n]", nome); 
+                do {
+                    printf("\n" ANSI_WHITE "➔" ANSI_RESET " Código: "); 
+                    if (scanf("%d", &cod) != 1) {
+                        while(getchar() != '\n'); 
+                        cod = -1;
+                    }
+                    if(cod < 0) {
+                        printf(ANSI_RED "✖ Erro: Código não pode ser negativo." ANSI_RESET "\n");
+                    }else {
+                        NO* busca = inicio;
+                        int duplicado = 0;
+                        while(busca != NULL) {
+                            if(busca->codigo == cod) {
+                                duplicado = 1;
+                                break;
+                            }
+                            busca = busca->prox;
+                        }
 
-                printf("\nCargo: "); 
-                scanf(" %[^\n]", cargo); 
+                        if (duplicado) {
+                            printf(ANSI_RED "✖ Erro: já existe um funcionário com o código %d" ANSI_RESET "\n", cod);
+                        } else {
+                            codigo_valido = 1; 
+                        }
+                    }
+                } while (!codigo_valido);
 
-                printf("\nSalario: "); 
-                scanf("%lf", &salario);
-                
+                do {
+                    printf("\n" ANSI_WHITE "➔" ANSI_RESET " Nome: "); 
+                    scanf(" %[^\n]", nome);
+                    if(string_contem_numeros(nome)) {
+                        printf(ANSI_RED "✖ Erro: O nome não deve conter números." ANSI_RESET "\n");
+                    }
+                } while(string_contem_numeros(nome));
+
+                do {
+                    printf("\n" ANSI_WHITE "➔" ANSI_RESET " Cargo: "); 
+                    scanf(" %[^\n]", cargo);
+                    if(string_contem_numeros(cargo)) {
+                        printf(ANSI_RED "✖ Erro: O cargo não deve conter números." ANSI_RESET "\n");
+                    }
+                } while(string_contem_numeros(cargo));
+
+                printf("\n" ANSI_WHITE "➔" ANSI_RESET " Salário: ");
+                do {
+                    if(scanf("%lf", &salario) != 1) {
+                        while(getchar() != '\n');
+                        salario = -1;
+                    }
+                    if(salario <= 0) printf(ANSI_RED "✖ Erro: O salário deve ser maior que zero. Digite novamente: " ANSI_RESET);
+                } while (salario <= 0);
+
                 if(cadastrar(nome, cod, cargo, salario)){
-                    printf("\n=> Funcionario cadastrado com sucesso!\n\n");
-                }else{
-                    free(nome);
-                    free(cargo);
+                    printf("\n" ANSI_GREEN "✔ Funcionário cadastrado com sucesso!" ANSI_RESET "\n\n");
                 }
                 
                 pressionar_enter();
                 break;
-                
+            } 
             case 2:
                 limpar_terminal();
                 listar_funcionarios();
-                
                 pressionar_enter();
                 break;
-                
             case 3:
                 limpar_terminal();
-                printf("\n=== BUSCAR FUNCIONARIO ===\n");
-                printf("Digite o codigo para buscar: ");
+                printf(ANSI_CYAN ANSI_BOLD "\n=== BUSCAR FUNCIONÁRIO ===" ANSI_RESET "\n");
+                printf("Digite o código para buscar: ");
                 scanf("%d", &cod);
                 buscar(cod);
-                
                 pressionar_enter();
                 break;
-                
-            case 4:{
+            case 4: {
                 limpar_terminal();
-                printf("\n=== ALTERAR FUNCIONARIO ===\n");
-                printf("Digite o codigo para alterar: ");
+                printf(ANSI_CYAN ANSI_BOLD "\n=== ALTERAR FUNCIONÁRIO ===" ANSI_RESET "\n");
+                printf("Digite o código para alterar: ");
                 scanf("%d", &cod);
                 NO *alterarFuncionario = buscar(cod);
                 alterar(alterarFuncionario);
                 pressionar_enter();
                 break;
             }
-                
-                
             case 5:
                 limpar_terminal();
-                printf("\n=== REMOVER FUNCIONARIO ===\n");
-                printf("Digite o codigo para remover: ");
+                printf(ANSI_CYAN ANSI_BOLD "\n=== REMOVER FUNCIONÁRIO ===" ANSI_RESET "\n");
+                printf("Digite o código para remover: ");
                 scanf("%d", &cod);
                 if (remover(cod) == NULL) {
-                    printf("\n=> Nenhum funcionario encontrado com o codigo %d.\n", cod);
+                    printf("\n" ANSI_RED "✖ Nenhum funcionário encontrado com o código %d." ANSI_RESET "\n", cod);
                 } else {
-                    printf("\n=> Usuario com codigo %d removido com sucesso!\n", cod);
+                    printf("\n" ANSI_GREEN "✔ Usuário removido com sucesso!" ANSI_RESET "\n");
                 }
                 pressionar_enter();
                 break;
-                
-                
             case 0:
                 limpar_terminal();
-                printf("\nEncerrando o programa...\n");
-                salvar_dados(inicio); //pro documento ficar salvo la na funcao
-                
-                
+                printf(ANSI_YELLOW "Sincronizando dados no disco..." ANSI_RESET "\n");
+                salvar_dados(path_dados); 
+                printf(ANSI_GREEN "\n[Programa encerrado com segurança]" ANSI_RESET "\n");
                 break;
-                
             default:
                 limpar_terminal();
-                printf("\nOpcao invalida! Tente novamente.\n");
+                printf(ANSI_RED "⚠ Opção inválida! Tente novamente." ANSI_RESET "\n");
         }
     } while (opcao != 0);
 
