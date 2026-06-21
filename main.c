@@ -62,7 +62,7 @@ void pressionar_enter() {
     limpar_terminal();
 }
 
-#define ARQUIVO_FUNCIONARIOS "funcionarios.csv"
+#define ARQUIVO_FUNCIONARIOS "funcionarios.dat"
 
 // CORRIGIDO: Removidos os asteriscos para virarem strings fixas e seguras
 typedef struct Funcionario {
